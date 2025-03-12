@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Feed with YOLOv8</title>
+    <style>
+        .ishika{
+            float: center;
+        }
+        #counter {
+            float: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #recording-status {
+            float: center;
+            font-size: 20px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="ishika">
+    <h1>Webcam Feed</h1>
+    <img id="videoFeed" src="{{ url_for('video_feed') }}" style="width: fit-content;"/>
+    <div id="counter">00:00:00</div>
+    <div id="recording-status">Not Recording</div>
+    <button onclick="startRecording()">Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording</button>
+    
+    <h2>Upload Video for Processing</h2>
+    <form id="uploadForm" enctype="multipart/form-data" method="POST" action="{{ url_for('upload_video') }}">
+        <input type="file" name="video_file" accept="video/*" required />
+        <button type="submit">Upload Video</button>
+    </form>
+
+    <h2>Download Processed Video</h2>
+    <a id="downloadLink" href="#" download="processed_video.avi" style="display:none;">Download Processed Video</a>
+
+    <script>
+        let recording = false;
+        let counterInterval;
+        let seconds = 0;
+
+        function updateCounter() {
+            seconds++;
+            let hours = Math.floor(seconds / 3600);
+            let minutes = Math.floor((seconds % 3600) / 60);
+            let secs = seconds % 60;
+            document.getElementById('counter').innerText = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function startRecording() {
+            if (!recording) {
+                recording = true;
+                document.getElementById('recording-status').innerText = 'Recording...';
+                fetch('/start_recording', { method: 'POST' });
+                counterInterval = setInterval(updateCounter, 1000);
+            }
+        }
+
+        function stopRecording() {
+            if (recording) {
+                recording = false;
+                document.getElementById('recording-status').innerText = 'Not Recording';
+                fetch('/stop_recording', { method: 'POST' });
+                clearInterval(counterInterval);
+                seconds = 0;
+                document.getElementById('counter').innerText = '00:00:00';
+            }
+        }
+
+        document.getElementById('uploadForm').onsubmit = function() {
+            // Display a loading message or spinner while processing
+            document.getElementById('downloadLink').style.display = 'none';
+        };
+
+        function handleUploadResponse(response) {
+            if (response.ok) {
+                // Update download link when processing is complete
+                document.getElementById('downloadLink').style.display = 'block';
+            }
+        }
+    </script></div>
+</body>
+</html>
